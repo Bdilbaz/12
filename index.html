@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erweitertes Meetingraum - Buchungssystem - Ebene 4</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            background-color: #4a90e2;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .btn:hover {
+            background-color: #357abd;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .dropdown-content button {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            transition: background-color 0.2s;
+        }
+
+        .btn-dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .btn-dropdown button:hover {
+            background-color: #e9e9e9;
+        }
+
+        select#roomSelect {
+            font-size: 16px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 100px repeat(5, 1fr);
+            gap: 1px;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .calendar-header-cell, .time-cell, .calendar-cell {
+            padding: 10px;
+            background-color: white;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        .calendar-header-cell {
+            font-weight: bold;
+            background-color: #4a90e2;
+            color: white;
+        }
+
+        .time-cell {
+            font-weight: bold;
+            background-color: #f5f5f5;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .calendar-cell {
+            height: 60px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-right: 1px solid #e0e0e0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .calendar-cell:hover {
+            background-color: #f0f0f0;
+        }
+
+        .booked-internal {
+            background-color: #81c784;
+            color: white;
+            cursor: not-allowed;
+        }
+
+        .booked-external {
+            background-color: #4db6ac;
+            color: white;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .form-group.checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .form-group.checkbox-group label {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+            font-weight: normal;
+        }
+
+        .form-group.checkbox-group input[type="checkbox"] {
+            margin-right: 5px;
+            width: auto;
+        }
+
+        .room-info {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-icon {
+            cursor: pointer;
+            font-size: 24px;
+            margin-left: 10px;
+        }
+
+        .btn-cancel {
+            background-color: #e57373;
+        }
+
+        .btn-cancel:hover {
+            background-color: #ef5350;
+        }
+
+        .slot-info {
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        .cancel-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .cancel-modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .cancel-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a90e2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .calendar-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .calendar-nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .calendar-grid {
+                font-size: 12px;
+            }
+
+            .calendar-cell {
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Erweitertes Meetingraum - Buchungssystem - Ebene 4</h1>
+    </div>
+    
+    <div class="container">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <button class="btn" id="prevWeek">&lt; Vorherige Woche</button>
+                <button class="btn" id="nextWeek">Nächste Woche &gt;</button>
+                <div class="btn-dropdown">
+                    <button class="btn" id="monthButton">Monat</button>
+                    <div class="dropdown-content" id="monthDropdown">
+                        <!-- Months will be dynamically loaded here -->
+                    </div>
+                </div>
+                <div class="btn-dropdown">
+                    <button class="btn" id="yearButton">Jahr</button>
+                    <div class="dropdown-content" id="yearDropdown">
+                        <!-- Years will be dynamically loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="calendar-nav">
+                <select id="roomSelect" class="btn">
+                    <option value="1">Meetingraum 1</option>
+                    <option value="2">Meetingraum 2</option>
+                    <option value="3">Meetingraum 3</option>
+                </select>
+                <span class="calendar-icon" id="calendarIcon">📅</span>
+                <button class="btn" id="refreshButton">Aktualisieren</button>
+            </div>
+        </div>
+        
+        <div id="calendar" class="calendar-grid">
+            <!-- Calendar will be generated here -->
+        </div>
+        
+        <div class="room-info">
+            <h3>Raumdetails</h3>
+            <p><strong>Maximale Teilnehmerzahl:</strong> <span id="maxParticipants">20</span></p>
+            <p><strong>Ausstattung:</strong> <span id="equipment">Beamer, Whiteboard, Video-Konferenzsystem</span></p>
+            <p><strong>Zusätzlich:</strong> <span id="additionalInfo">Snacks & Getränke verfügbar</span></p>
+        </div>
+    </div>
+    
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <h2>Termin buchen</h2>
+            <form id="bookingForm" action="send_email.php" method="POST">
+                <div class="form-group">
+                    <label for="title">Titel</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">E-Mail</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="department">Abteilung</label>
+                    <input type="text" id="department" name="department" required>
+                </div>
+                <div class="form-group">
+                    <label for="participants">Teilnehmerzahl</label>
+                    <input type="number" id="participants" name="participants" min="1" max="20" required>
+                </div>
+                <div class="form-group">
+                    <label for="startTime">Startzeit</label>
+                    <input type="time" id="startTime" name="startTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="endTime">Endzeit</label>
+                    <input type="time" id="endTime" name="endTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="type">Buchungstyp</label>
+                    <select id="type" name="type">
+                        <option value="internal">Intern</option>
+                        <option value="external">Extern</option>
+                    </select>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>Räume:</label>
+                    <label for="room1">
+                        <input type="checkbox" id="room1" name="rooms" value="1">
+                        Meetingraum 1
+                    </label>
+                    <label for="room2">
+                        <input type="checkbox" id="room2" name="rooms" value="2">
+                        Meetingraum 2
+                    </label>
+                    <label for="room3">
+                        <input type="checkbox" id="room3" name="rooms" value="3">
+                        Meetingraum 3
+                    </label>
+                </div>
+                <button type="submit" class="btn">Buchen</button>
+                <button type="button" class="btn btn-cancel" onclick="closeModal()">Abbrechen</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="cancelModal" class="cancel-modal">
+        <div class="cancel-modal-content">
+</div>
+    </div>
+
+    <div id="cancelModal" class="cancel-modal">
+        <div class="cancel-modal-content">
+            <h2>Termin stornieren?</h2>
+            <p>Möchten Sie diesen Termin wirklich stornieren?</p>
+            <div class="cancel-buttons">
+                <button class="btn" id="confirmCancel">Ja, Stornieren</button>
+                <button class="btn btn-cancel" id="abortCancel">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingSpinner" class="loading-spinner" style="display: none;"></div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let currentDate = new Date();
+        const calendar = document.getElementById('calendar');
+        const bookingModal = document.getElementById('bookingModal');
+        const cancelModal = document.getElementById('cancelModal');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const toast = document.getElementById('toast');
+        let selectedCell = null;
+        let bookings = [];
+
+        function initCalendar() {
+            showLoadingSpinner();
+            updateMonthDropdown();
+            updateYearDropdown();
+            generateCalendarGrid();
+            loadBookings();
+            updateHeaderButtons();
+            updateRoomInfo();
+            hideLoadingSpinner();
+        }
+
+        function showLoadingSpinner() {
+            loadingSpinner.style.display = 'block';
+        }
+
+        function hideLoadingSpinner() {
+            loadingSpinner.style.display = 'none';
+        }
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function updateMonthDropdown() {
+            const monthDropdown = document.getElementById('monthDropdown');
+            monthDropdown.innerHTML = '';
+            const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+            months.forEach((month, index) => {
+                const button = document.createElement('button');
+                button.textContent = month;
+                button.onclick = () => selectMonth(index);
+                monthDropdown.appendChild(button);
+            });
+        }
+
+        function updateYearDropdown() {
+            const yearDropdown = document.getElementById('yearDropdown');
+            yearDropdown.innerHTML = '';
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year <= currentYear + 10; year++) {
+                const button = document.createElement('button');
+                button.textContent = year;
+                button.onclick = () => selectYear(year);
+                yearDropdown.appendChild(button);
+            }
+        }
+
+        function selectMonth(month) {
+            currentDate.setMonth(month);
+            initCalendar();
+        }
+
+        function selectYear(year) {
+            currentDate.setFullYear(year);
+            initCalendar();
+        }
+
+        function updateHeaderButtons() {
+            const startOfWeek = getStartOfWeek(currentDate);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 4);
+
+            const monthYearStr = startOfWeek.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+            const dateRangeStr = `${startOfWeek.getDate()}. - ${endOfWeek.getDate()}. ${monthYearStr}`;
+
+            document.getElementById('monthButton').textContent = dateRangeStr;
+            document.getElementById('yearButton').textContent = currentDate.getFullYear();
+        }
+
+        function generateCalendarGrid() {
+            calendar.innerHTML = '';
+            const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+            const startOfWeek = getStartOfWeek(currentDate);
+
+            calendar.appendChild(createCell('Zeit', 'calendar-header-cell'));
+            weekDays.forEach((day, index) => {
+                const date = new Date(startOfWeek);
+                date.setDate(date.getDate() + index);
+                const formattedDate = date.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+                calendar.appendChild(createCell(formattedDate, 'calendar-header-cell'));
+            });
+
+            for (let hour = 8; hour <= 19; hour++) {
+                for (let minute of ['00', '30']) {
+                    const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                    calendar.appendChild(createCell(time, 'time-cell'));
+
+                    for (let day = 0; day < 5; day++) {
+                        const cell = createCell('', 'calendar-cell');
+                        cell.dataset.time = time;
+                        cell.dataset.day = day;
+                        cell.dataset.room = document.getElementById('roomSelect').value;
+                        cell.addEventListener('click', () => openBookingModal(cell, day, time));
+                        calendar.appendChild(cell);
+                    }
+                }
+            }
+        }
+
+        function createCell(content, className) {
+            const cell = document.createElement('div');
+            cell.textContent = content;
+            cell.className = className;
+            return cell;
+        }
+
+        function openBookingModal(cell, day, time) {
+            selectedCell = cell;
+            bookingModal.style.display = 'flex';
+            document.getElementById('startTime').value = time;
+            document.getElementById('endTime').value = getEndTime(time);
+
+            const roomCheckboxes = document.querySelectorAll('input[name="rooms"]');
+            roomCheckboxes.forEach(checkbox => {
+                checkbox.checked = checkbox.value === document.getElementById('roomSelect').value;
+            });
+        }
+
+        function getEndTime(startTime) {
+            const [hours, minutes] = startTime.split(':').map(Number);
+            const endDate = new Date(2000, 0, 1, hours, minutes);
+            endDate.setMinutes(endDate.getMinutes() + 30);
+            return `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        function closeModal() {
+            bookingModal.style.display = 'none';
+            cancelModal.style.display = 'none';
+            document.getElementById('bookingForm').reset();
+        }
+
+        function saveBooking(booking) {
+            booking.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            booking.bookedDate = currentDate.toISOString();
+            bookings.push(booking);
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+        }
+
+        function deleteBooking(bookingId) {
+            bookings = bookings.filter(b => b.id !== bookingId);
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+        }
+
+        function loadBookings() {
+            bookings = JSON.parse(localStorage.getItem('bookings')) || [];
+            const currentWeekStart = getStartOfWeek(currentDate);
+            const currentWeekEnd = new Date(currentWeekStart);
+            currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+
+            bookings.forEach(booking => {
+                const bookedDate = new Date(booking.bookedDate);
+                if (bookedDate >= currentWeekStart && bookedDate <= currentWeekEnd && 
+                    parseInt(booking.day) === bookedDate.getDay() - 1) {
+                    const timeSlots = getTimeSlots(booking.startTime, booking.endTime);
+                    timeSlots.forEach(slot => {
+                        booking.rooms.forEach(room => {
+                            const slotCell = document.querySelector(`[data-day="${booking.day}"][data-time="${slot}"][data-room="${room}"]`);
+                            if (slotCell) {
+                                const className = booking.type === 'internal' ? 'booked-internal' : 'booked-external';
+                                slotCell.classList.add(className);
+                                slotCell.innerHTML = `
+                                    <div class="slot-info">
+                                        ${booking.title}<br>
+                                        ${booking.name}<br>
+                                        ${booking.department}
+                                    </div>
+                                `;
+                                slotCell.style.backgroundColor = className === 'booked-internal' ? '#81c784' : '#4db6ac';
+                                slotCell.dataset.bookingId = booking.id;
+                            }
+                        });
+                    });
+                }
+            });
+        }
+
+        function getTimeSlots(start, end) {
+            const times = [];
+            let current = new Date(`2000-01-01T${start}`);
+            const endTime = new Date(`2000-01-01T${end}`);
+
+            while (current < endTime) {
+                times.push(current.toTimeString().slice(0, 5));
+                current.setMinutes(current.getMinutes() + 30);
+            }
+
+            return times;
+        }
+
+        function getStartOfWeek(date) {
+            const tempDate = new Date(date);
+            const day = tempDate.getDay();
+            const diff = tempDate.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(tempDate.setDate(diff));
+        }
+
+        function updateRoomInfo() {
+            const roomSelect = document.getElementById('roomSelect');
+            const maxParticipants = document.getElementById('maxParticipants');
+            const equipment = document.getElementById('equipment');
+            const additionalInfo = document.getElementById('additionalInfo');
+
+            const roomData = {
+                '1': {
+                    maxParticipants: 20,
+                    equipment: 'Beamer, Whiteboard, Video-Konferenzsystem',
+                    additionalInfo: 'Snacks & Getränke verfügbar'
+                },
+                '2': {
+                    maxParticipants: 15,
+                    equipment: 'Beamer, Flipchart, Telefonkonferenz-System',
+                    additionalInfo: 'Tageslicht, Klimaanlage'
+                },
+                '3': {
+                    maxParticipants: 10,
+                    equipment: 'Smartboard, Videokonferenz-System',
+                    additionalInfo: 'Barrierefrei zugänglich'
+                }
+            };
+
+            const selectedRoom = roomData[roomSelect.value];
+            maxParticipants.textContent = selectedRoom.maxParticipants;
+            equipment.textContent = selectedRoom.equipment;
+            additionalInfo.textContent = selectedRoom.additionalInfo;
+        }
+
+        document.getElementById('bookingForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            showLoadingSpinner();
+
+            const formData = new FormData(e.target);
+            const bookingData = Object.fromEntries(formData.entries());
+            bookingData.rooms = formData.getAll('rooms');
+
+            if (selectedCell && bookingData.rooms.length > 0) {
+                bookingData.day = selectedCell.dataset.day;
+                saveBooking(bookingData);
+
+                fetch('send_email.php', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    if (response.ok) {
+                        showToast('Buchung erfolgreich und E-Mail gesendet!');
+                        initCalendar();
+                    } else {
+                        showToast('Fehler beim Senden der E-Mail.');
+                    }
+                }).catch(error => {
+                    showToast('Es gab ein Problem: ' + error.message);
+                }).finally(() => {
+                    hideLoadingSpinner();
+                    closeModal();
+                });
+            } else {
+                hideLoadingSpinner();
+                showToast('Bitte wählen Sie mindestens einen Raum aus.');
+            }
+        });
+
+        document.body.addEventListener('click', (e) => {
+            if (e.target.closest('.booked-internal') || e.target.closest('.booked-external')) {
+                selectedCell = e.target.closest('.calendar-cell');
+                openCancelModal();
+            }
+        });
+
+        function openCancelModal() {
+            cancelModal.style.display = 'flex';
+            bookingModal.style.display = 'none';
+        }
+
+        function closeCancelModal() {
+            cancelModal.style.display = 'none';
+        }
+
+        document.getElementById('confirmCancel').addEventListener('click', () => {
+            if (selectedCell) {
+                const bookingId = selectedCell.dataset.bookingId;
+                deleteBooking(bookingId);
+                showToast('Buchung erfolgreich storniert.');
+                initCalendar();
+            }
+            closeCancelModal();
+        });
+
+        document.getElementById('abortCancel').addEventListener('click', closeCancelModal);
+
+        document.getElementById('prevWeek').addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() - 7);
+            initCalendar();
+        });
+
+        document.getElementById('nextWeek').addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() + 7);
+            initCalendar();
+        });
+
+        document.getElementById('roomSelect').addEventListener('change', initCalendar);
+
+        document.getElementById('refreshButton').addEventListener('click', initCalendar);
+
+        document.getElementById('calendarIcon').addEventListener('click', () => {
+            const datePicker = document.createElement('input');
+            datePicker.type = 'date';
+            datePicker.style.display = 'none';
+            document.body.appendChild(datePicker);
+
+            datePicker.addEventListener('change', (e) => {
+                currentDate = new Date(e.target.value);
+                initCalendar();
+                document.body.removeChild(datePicker);
+            });
+
+            datePicker.click();
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth <= 768) {
+                document.querySelectorAll('.btn').forEach(btn => {
+                    btn.style.width = '100%';
+                });
+            } else {
+                document.querySelectorAll('.btn').forEach(btn => {
+                    btn.style.width = 'auto';
+                });
+            }
+        });
+
+        initCalendar();
+    </script>
+</body>
+</html>
